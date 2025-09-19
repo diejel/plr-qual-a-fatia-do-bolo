@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador PLR - Qual a Fatia 🍰 de bolito? 🤗!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 20px; height: 20px; background: #2563eb;
+            cursor: pointer; border-radius: 50%; margin-top: -6px;
+        }
+        .result-line { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+        .result-label { color: #4b5563; }
+        .result-value { font-weight: 500; color: #1f2937; }
+        .deduction { color: #dc2626; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-8">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-blue-900">Simulador de PLR/PPR Bancário</h1>
+            <p class="text-gray-500 mt-1">DescubrabQual a Fatia 🍰 de bolito? 🤗!</p>
+        </div>
+
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="salario" class="block text-sm font-medium text-gray-700 mb-1">Salário base (R$)</label>
+                    <input type="number" id="salario" placeholder="Ex: 8000.00" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label for="plr-marco-2025" class="block text-sm font-medium text-gray-700 mb-1">PLR/PPR Bruto (Mar/2025)</label>
+                    <input type="number" id="plr-marco-2025" placeholder="P/ ajuste de IR" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div>
+                    <label for="banco" class="block text-sm font-medium text-gray-700 mb-1">Seu Banco ou Acordo</label>
+                    <select id="banco" onchange="updateFormForBankType()" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500">
+                        <option value="cct_padrao" data-type="cct">Padrão CCT (Itaú, Bradesco, Santander...)</option>
+                        <option value="mult_jpmorgan" data-type="multiplier" data-default="2.2">JP Morgan, BTG (Multiplicador)</option>
+                        <option value="valor_fixo" data-type="fixed">Nubank / Outro (Valor Fixo)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="meses" class="block text-sm font-medium text-gray-700 mb-1">Meses trabalhados (2025)</label>
+                    <input type="number" id="meses" value="12" min="1" max="12" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div id="slider-container" class="hidden space-y-2 pt-2">
+                <div class="flex justify-between items-center">
+                    <label for="multiplicador-slider" class="text-sm font-medium text-gray-700">Multiplicador Salarial</label>
+                    <span id="slider-value" class="text-sm font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">2.2x</span>
+                </div>
+                <input id="multiplicador-slider" type="range" min="0.1" max="5.0" value="2.2" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateSliderValue()">
+            </div>
+            
+            <div id="fixed-value-container" class="hidden pt-2">
+                <label for="valor-fixo-anual" class="block text-sm font-medium text-gray-700 mb-1">Valor Fixo do PPR (Bruto Anual)</label>
+                <input type="number" id="valor-fixo-anual" placeholder="Ex: 15000.00" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Insira o valor total anunciado pela sua empresa para o ciclo.</p>
+            </div>
+
+            <div class="space-y-3 pt-2">
+                 <div class="flex items-center space-x-3">
+                    <input id="reajuste" type="checkbox" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="reajuste" class="text-sm text-gray-900">Aplicar reajuste projetado de 5,68%*</label>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <input id="calcular-ir" type="checkbox" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="calcular-ir" class="text-sm text-gray-900">Calcular Imposto de Renda</label>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <input id="contrib-negocial" type="checkbox" checked class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="contrib-negocial" class="text-sm text-gray-900">Aplicar Contribuição Negocial (1,5%)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <button onclick="calcularPLR()" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-300 transform hover:scale-105">
+                Calcular Meu Bônus!
+            </button>
+        </div>
+        
+        <div id="resultado" class="mt-8 border-t-2 border-gray-200 pt-6 hidden">
+             <div class="text-center mb-4">
+                 <h2 class="text-xl font-semibold text-blue-900">Resultado Detalhado da Simulação</h2>
+                 <p id="calculation-method" class="text-sm text-gray-500"></p>
+             </div>
+             <div class="space-y-5">
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <p class="font-semibold text-blue-800 mb-3">Primeira Parcela <span class="text-sm font-normal">(SET/2025)</span></p>
+                    <div class="text-sm space-y-1">
+                        <div class="result-line"><span class="result-label">Salário p/ cálculo:</span><span id="p1-salario-reajustado" class="result-value"></span></div>
+                        <div class="result-line"><span class="result-label">Antecipação (Regra Básica):</span><span id="p1-antecipacao" class="result-value"></span></div>
+                        <div class="result-line"><span class="result-label">Parcela Adicional:</span><span id="p1-adicional" class="result-value"></span></div>
+                        <hr class="my-2">
+                        <div class="result-line"><span class="result-label font-bold">Subtotal Bruto:</span><span id="p1-bruto" class="result-value font-bold"></span></div>
+                        <div class="result-line"><span class="result-label">Contribuição Negocial (-):</span><span id="p1-contrib" class="result-value deduction"></span></div>
+                        <div class="result-line"><span class="result-label">Imposto de Renda (-):</span><span id="p1-ir" class="result-value deduction"></span></div>
+                        <div class="result-line border-t pt-2 mt-1"><span class="font-bold text-lg">Líquido Estimado:</span><span id="p1-liquido" class="font-bold text-lg text-blue-800"></span></div>
+                    </div>
+                </div>
+                 <div class="bg-gray-50 p-4 rounded-lg border">
+                    <p class="font-semibold text-green-800 mb-3">Segunda Parcela <span class="text-sm font-normal">(MAR/2026)</span></p>
+                    <div class="text-sm space-y-1">
+                       <div class="result-line"><span class="result-label">Complemento Final:</span><span id="p2-complemento" class="result-value"></span></div>
+                        <hr class="my-2">
+                        <div class="result-line"><span class="result-label font-bold">Subtotal Bruto:</span><span id="p2-bruto" class="result-value font-bold"></span></div>
+                        <div class="result-line"><span class="result-label">Contribuição Negocial (-):</span><span id="p2-contrib" class="result-value deduction"></span></div>
+                        <div class="result-line"><span class="result-label">Imposto de Renda (-):</span><span id="p2-ir" class="result-value deduction"></span></div>
+                        <div class="result-line border-t pt-2 mt-1"><span class="font-bold text-lg">Líquido Estimado:</span><span id="p2-liquido" class="font-bold text-lg text-green-800"></span></div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 text-white p-4 rounded-lg">
+                     <div class="space-y-2 text-sm">
+                        <div class="result-line"><span class="text-gray-300">Total Bruto:</span><span id="total-bruto" class="font-medium"></span></div>
+                        <div class="result-line"><span class="text-gray-300">Total de Descontos:</span><span id="total-descontos" class="font-medium text-red-400"></span></div>
+                        <div class="result-line border-t border-gray-600 pt-2 mt-1"><span class="font-bold text-lg">TOTAL LÍQUIDO NO BOLSO:</span><span id="total-liquido" class="font-bold text-xl"></span></div>
+                    </div>
+                </div>
+             </div>
+        </div>
+        
+        <div class="text-center mt-6">
+            <p class="text-xs text-gray-400">
+                Última atualização: Set/2025.
+                *Reajuste de 5,68% (INPC 5,05% + 0,6% aumento real). Os cálculos são projeções e podem divergir do valor real.
+            </p>
+        </div>
+    </div>
+
+    <script>
+    var _0x2a1a=['\x63\x61\x6c\x63\x75\x6c\x61\x74\x69\x6f\x6e\x2d\x6d\x65\x74\x68\x6f\x64','\x70\x32\x2d\x63\x6f\x6d\x70\x6c\x65\x6d\x65\x6e\x74\x6f','\x43\xe1\x6c\x63\x75\x6c\x6f\x20\x70\x6f\x72\x20\x4d\x75\x6c\x74\x69\x70\x6c\x69\x63\x61\x64\x6f\x72\x20\x53\x61\x6c\x61\x72\x69\x61\x6c\x20\x28\x45\x78\x3a\x20\x4a\x50\x20\x4d\x6f\x72\x67\x61\x6e\x2c\x20\x42\x54\x47\x29','\x6d\x75\x6c\x74\x69\x70\x6c\x69\x63\x61\x64\x6f\x72\x2d\x73\x6c\x69\x64\x65\x72','\x43\xe1\x6c\x63\x75\x6c\x6f\x20\x70\x6f\x72\x20\x56\x61\x6c\x6f\x72\x20\x46\x69\x78\x6f\x20\x41\x6e\x75\x61\x6c\x20\x28\x45\x78\x3a\x20\x4e\x75\x62\x61\x6e\x6b\x29','\x76\x61\x6c\x6f\x72\x2d\x66\x69\x78\x6f\x2d\x61\x6e\x75\x61\x6c','\x50\x6f\x72\x20\x66\x61\x76\x6f\x72\x2c\x20\x69\x6e\x66\x6f\x72\x6d\x65\x20\x6f\x20\x56\x61\x6c\x6f\x72\x20\x46\x69\x78\x6f\x20\x41\x6e\x75\x61\x6c\x20\x64\x6f\x20\x50\x50\x52\x2e','\x61\x6e\x74\x65\x63\x69\x70\x61\x63\x61\x6f','\x61\x64\x69\x63\x69\x6f\x6e\x61\x6c','\x70\x31\x2d\x62\x72\x75\x74\x6f','\x70\x31\x2d\x63\x6f\x6e\x74\x72\x69\x62','\x70\x31\x2d\x69\x72','\x70\x31\x2d\x6c\x69\x71\x75\x69\x64\x6f','\x70\x32\x2d\x62\x72\x75\x74\x6f','\x70\x32\x2d\x63\x6f\x6e\x74\x72\x69\x62','\x70\x32\x2d\x69\x72','\x70\x32\x2d\x6c\x69\x71\x75\x69\x64\x6f','\x74\x6f\x74\x61\x6c\x2d\x62\x72\x75\x74\x6f','\x74\x6f\x74\x61\x6c\x2d\x64\x65\x73\x63\x6f\x6e\x74\x6f\x73','\x74\x6f\x74\x61\x6c\x2d\x6c\x69\x71\x75\x69\x64\x6f','\x66\x61\x64\x65\x2d\x69\x6e','\x44\x4f\x4d\x43\x6f\x6e\x74\x65\x6e\x74\x4c\x6f\x61\x64\x65\x64','\x73\x61\x6c\x61\x72\x69\x6f','\x74\x6f\x4c\x6f\x63\x61\x6c\x65\x53\x74\x72\x69\x6e\x67','\x70\x74\x2d\x42\x52','\x73\x74\x79\x6c\x65','\x63\x75\x72\x72\x65\x6e\x63\x79','\x42\x52\x4c','\x62\x61\x6e\x63\x6f','\x6f\x70\x74\x69\x6f\x6e\x73','\x73\x65\x6c\x65\x63\x74\x65\x64\x49\x6e\x64\x65\x78','\x67\x65\x74\x41\x74\x74\x72\x69\x62\x75\x74\x65','\x64\x61\x74\x61\x2d\x74\x79\x70\x65','\x73\x6c\x69\x64\x65\x72\x2d\x63\x6f\x6e\x74\x61\x69\x6e\x65\x72','\x66\x69\x78\x65\x64\x2d\x76\x61\x6c\x75\x65\x2d\x63\x6f\x6e\x74\x61\x69\x6e\x65\x72','\x63\x6c\x61\x73\x73\x4c\x69\x73\x74','\x61\x64\x64','\x68\x69\x64\x64\x65\x6e','\x6d\x75\x6c\x74\x69\x70\x6c\x69\x65\x72','\x64\x61\x74\x61\x2d\x64\x65\x66\x61\x75\x6c\x74','\x31\x2e\x30','\x76\x61\x6c\x75\x65','\x72\x65\x6d\x6f\x76\x65','\x66\x69\x78\x65\x64','\x73\x6c\x69\x64\x65\x72\x2d\x76\x61\x6c\x75\x65','\x74\x65\x78\x74\x43\x6f\x6e\x74\x65\x6e\x74','\x74\x6f\x46\x69\x78\x65\x64','\x70\x6c\x72\x2d\x6d\x61\x72\x63\x6f\x2d\x32\x30\x32\x35','\x72\x65\x61\x6a\x75\x73\x74\x65','\x63\x68\x65\x63\x6b\x65\x64','\x63\x61\x6c\x63\x75\x6c\x61\x72\x2d\x69\x72','\x63\x6f\x6e\x74\x72\x69\x62\x2d\x6e\x65\x67\x6f\x63\x69\x61\x6c','\x6d\x65\x73\x65\x73','\x63\x63\x74','\x43\xe1\x6c\x63\x75\x6c\x6f\x20\x50\x61\x64\x72\xe3\x6f\x20\x43\x43\x54\x20\x28\x45\x78\x3a\x20\x49\x74\x61\xfa\x2c\x20\x42\x72\x61\x64\x65\x73\x63\x6f\x29'];var _0x5bf8=function(_0x1d4d35,_0x36e2f9){_0x1d4d35=_0x1d4d35-0;var _0x5bf86b=_0x2a1a[_0x1d4d35];return _0x5bf86b;};function formatarMoeda(_0x32795f){return _0x32795f[_0x5bf8(0x18)](_0x5bf8(0x19),{_0x5bf8(0x1a):_0x5bf8(0x1b),_0x5bf8(0x1c):_0x5bf8(0x1d)});};function calcularIR(_0x2286b5){if(_0x2286b5<=7640.8)return 0;if(_0x2286b5<=9922.28)return(_0x2286b5*0.075)-573.06;if(_0x2286b5<=13167)return(_0x2286b5*0.15)-1317.23;if(_0x2286b5<=16380.38)return(_0x2286b5*0.225)-2304.76;return(_0x2286b5*0.275)-3123.78;};function updateFormForBankType(){var _0x518f9e=document['getElementById'](_0x5bf8(0x1e));var _0x1a8f96=_0x518f9e[_0x5bf8(0x1f)][_0x518f9e[_0x5bf8(0x20)]];var _0x5b3d68=_0x1a8f96[_0x5bf8(0x21)](_0x5bf8(0x22));var _0x13380b=document['getElementById'](_0x5bf8(0x23));var _0x4d634d=document['getElementById'](_0x5bf8(0x24));_0x13380b[_0x5bf8(0x25)][_0x5bf8(0x26)](_0x5bf8(0x27));_0x4d634d[_0x5bf8(0x25)][_0x5bf8(0x26)](_0x5bf8(0x27));if(_0x5b3d68===_0x5bf8(0x28)){var _0x1d9b30=_0x1a8f96[_0x5bf8(0x21)](_0x5bf8(0x29))||_0x5bf8(0x2a);document['getElementById'](_0x5bf8(0x4))[_0x5bf8(0x2b)]=_0x1d9b30;updateSliderValue();_0x13380b[_0x5bf8(0x25)][_0x5bf8(0x2c)](_0x5bf8(0x27));}else{if(_0x5b3d68===_0x5bf8(0x2d)){_0x4d634d[_0x5bf8(0x25)][_0x5bf8(0x2c)](_0x5bf8(0x27));};};};function updateSliderValue(){var _0x117409=document['getElementById'](_0x5bf8(0x4));var _0x1f062d=document['getElementById'](_0x5bf8(0x2e));_0x1f062d[_0x5bf8(0x2f)]=''.concat(parseFloat(_0x117409[_0x5bf8(0x2b)])[_0x5bf8(0x30)](1),'x');};function calcularPLR(){var _0x27b876=parseFloat(document['getElementById'](_0x5bf8(0x17))[_0x5bf8(0x2b)])||0;if(_0x27b876===0){alert('Por\x20favor,\x20informe\x20o\x20seu\x20salário.');return;};var _0x12921e=document['getElementById'](_0x5bf8(0x1e));var _0x17904b=_0x12921e['options'][_0x12921e[_0x5bf8(0x20)]];var _0x303c73=_0x17904b['getAttribute'](_0x5bf8(0x22));var _0x3b890f=parseFloat(document['getElementById'](_0x5bf8(0x31))['value'])||0;var _0x3c242c=document['getElementById'](_0x5bf8(0x32))[_0x5bf8(0x33)];var _0x18441f=document['getElementById'](_0x5bf8(0x34))[_0x5bf8(0x33)];var _0x539958=document['getElementById'](_0x5bf8(0x35))[_0x5bf8(0x33)];var _0x2a23eb=parseInt(document['getElementById'](_0x5bf8(0x36))[_0x5bf8(0x2b)])||12;var _0x59918c=_0x2a23eb/12;var _0x510f22={'FATOR_SALARIO_REGRA_BASICA':0.9,'VALOR_FIXO_REGRA_BASICA':3194.8,'TETO_REGRA_BASICA':17147.82,'PARCELA_ADICIONAL_FIXA':6634.44,'FATOR_SALARIO_ANTECIPACAO':0.54,'VALOR_FIXO_ANTECIPACAO':1916.88,'TETO_ANTECIPACAO_REGRA':10288.69};_0x510f22['TETO_ANTECIPACAO_ADICIONAL']=_0x510f22['PARCELA_ADICIONAL_FIXA']/2;var _0x51b34e=_0x3c242c?_0x27b876*1.0568:_0x27b876;var _0x2de1a8={'bruto':0,'ir':0,'contrib':0,'liquido':0};var _0x24270d={'bruto':0,'ir':0,'contrib':0,'liquido':0};var _0x539bf5=0;if(_0x303c73===_0x5bf8(0x37)){document['getElementById'](_0x5bf8(0x0))[_0x5bf8(0x2f)]=_0x5bf8(0x38);var _0x2f8b54=Math['min'](_0x51b34e*_0x510f22['FATOR_SALARIO_REGRA_BASICA']+_0x510f22['VALOR_FIXO_REGRA_BASICA'],_0x510f22['TETO_REGRA_BASICA']);_0x539bf5=(_0x2f8b54+_0x510f22['PARCELA_ADICIONAL_FIXA'])*_0x59918c;}else{if(_0x303c73===_0x5bf8(0x28)){document['getElementById'](_0x5bf8(0x0))['textContent']=_0x5bf8(0x3);var _0x310f85=parseFloat(document['getElementById'](_0x5bf8(0x4))[_0x5bf8(0x2b)]);_0x539bf5=_0x51b34e*_0x310f85*_0x59918c;}else{if(_0x303c73===_0x5bf8(0x2d)){document['getElementById'](_0x5bf8(0x0))[_0x5bf8(0x2f)]=_0x5bf8(0x5);var _0x323a6f=parseFloat(document['getElementById'](_0x5bf8(0x6))[_0x5bf8(0x2b)])||0;if(_0x323a6f===0){alert(_0x5bf8(0x7));return;};_0x539bf5=_0x323a6f*_0x59918c;};};};var _0x2be4cd=Math['min'](_0x51b34e*_0x510f22['FATOR_SALARIO_ANTECIPACAO']+_0x510f22['VALOR_FIXO_ANTECIPACAO'],_0x510f22['TETO_ANTECIPACAO_REGRA']);var _0x5a1811=_0x510f22['TETO_ANTECIPACAO_ADICIONAL'];_0x2de1a8['bruto']=(_0x2be4cd+_0x5a1811)*_0x59918c;_0x24270d['bruto']=Math['max'](0,_0x539bf5-_0x2de1a8['bruto']);if(_0x539958){_0x2de1a8['contrib']=_0x2de1a8['bruto']*0.015;_0x24270d['contrib']=_0x24270d['bruto']*0.015;};if(_0x18441f){var _0x4d05e2=_0x2de1a8['bruto']+_0x3b890f;var _0x51b852=calcularIR(_0x4d05e2);var _0x2beab4=calcularIR(_0x3b890f);_0x2de1a8['ir']=Math['max'](0,_0x51b852-_0x2beab4);_0x24270d['ir']=calcularIR(_0x24270d['bruto']);};_0x2de1a8['liquido']=_0x2de1a8['bruto']-_0x2de1a8['ir']-_0x2de1a8['contrib'];_0x24270d['liquido']=_0x24270d['bruto']-_0x24270d['ir']-_0x24270d['contrib'];document['getElementById']('p1-salario-reajustado')[_0x5bf8(0x2f)]=formatarMoeda(_0x51b34e);document['getElementById']('p1-'.concat(_0x5bf8(0x8)))[_0x5bf8(0x2f)]=formatarMoeda(_0x2be4cd*_0x59918c);document['getElementById']('p1-'.concat(_0x5bf8(0x9)))['textContent']=formatarMoeda(_0x5a1811*_0x59918c);document['getElementById'](_0x5bf8(0xa))[_0x5bf8(0x2f)]=formatarMoeda(_0x2de1a8['bruto']);document['getElementById'](_0x5bf8(0xb))[_0x5bf8(0x2f)]=formatarMoeda(_0x2de1a8['contrib']);document['getElementById'](_0x5bf8(0xc))[_0x5bf8(0x2f)]=formatarMoeda(_0x2de1a8['ir']);document['getElementById'](_0x5bf8(0xd))[_0x5bf8(0x2f)]=formatarMoeda(_0x2de1a8['liquido']);document['getElementById'](_0x5bf8(0x1))[_0x5bf8(0x2f)]=formatarMoeda(_0x24270d['bruto']);document['getElementById'](_0x5bf8(0xe))['textContent']=formatarMoeda(_0x24270d['bruto']);document['getElementById'](_0x5bf8(0xf))[_0x5bf8(0x2f)]=formatarMoeda(_0x24270d['contrib']);document['getElementById'](_0x5bf8(0x10))['textContent']=formatarMoeda(_0x24270d['ir']);document['getElementById'](_0x5bf8(0x11))[_0x5bf8(0x2f)]=formatarMoeda(_0x24270d['liquido']);var _0x4d05e2=_0x2de1a8['bruto']+_0x24270d['bruto'];var _0x51b852=_0x2de1a8['contrib']+_0x2de1a8['ir']+_0x24270d['contrib']+_0x24270d['ir'];document['getElementById'](_0x5bf8(0x12))[_0x5bf8(0x2f)]=formatarMoeda(_0x4d05e2);document['getElementById'](_0x5bf8(0x13))[_0x5bf8(0x2f)]=formatarMoeda(_0x51b852);document['getElementById'](_0x5bf8(0x14))[_0x5bf8(0x2f)]=formatarMoeda(_0x2de1a8['liquido']+_0x24270d['liquido']);document['getElementById']('resultado')[_0x5bf8(0x25)]['remove'](_0x5bf8(0x27));document['getElementById']('resultado')[_0x5bf8(0x25)][_0x5bf8(0x26)](_0x5bf8(0x15));};document['addEventListener'](_0x5bf8(0x16),function(){updateFormForBankType();document['getElementById'](_0x5bf8(0x17))[_0x5bf8(0x2b)]='8000';});
+    </script>
+</body>
+</html>
+
+
