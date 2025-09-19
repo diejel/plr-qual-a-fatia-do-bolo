@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador PLR/PPR - Qual a fatia do Buelo?!</title>
+    <title>Simulador PLR - Cadê o Bônus?!</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,7 +29,7 @@
         
         <div class="text-center mb-8">
             <h1 class="text-2xl font-bold text-blue-900">Simulador de PLR/PPR Bancário</h1>
-            <p class="text-gray-500 mt-1">Descubra quanto do buelito é seu :) !</p>
+            <p class="text-gray-500 mt-1">Descubra quanto do bolo é seu!</p>
         </div>
 
         <div class="space-y-6">
@@ -59,6 +59,7 @@
                 </div>
             </div>
             
+            <!-- Campo para Bancos com Multiplicador -->
             <div id="slider-container" class="hidden space-y-2 pt-2">
                 <div class="flex justify-between items-center">
                     <label for="multiplicador-slider" class="text-sm font-medium text-gray-700">Multiplicador Salarial</label>
@@ -67,6 +68,7 @@
                 <input id="multiplicador-slider" type="range" min="0.1" max="5.0" value="2.2" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateSliderValue()">
             </div>
             
+            <!-- Campo para Bancos com Valor Fixo -->
             <div id="fixed-value-container" class="hidden pt-2">
                 <label for="valor-fixo-anual" class="block text-sm font-medium text-gray-700 mb-1">Valor Fixo do PPR (Bruto Anual)</label>
                 <input type="number" id="valor-fixo-anual" placeholder="Ex: 15000.00" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
@@ -144,136 +146,165 @@
     </div>
 
     <script>
-        var _0x5bf8 = ["salario", "value", "Por\x20favor,\x20informe\x20o\x20seu\x20salário.", "banco", "options", "selectedIndex", "getAttribute", "data-type", "plr-marco-2025", "reajuste", "checked", "calcular-ir", "contrib-negocial", "meses", "calculation-method", "textContent", "Cálculo\x20Padrão\x20CCT\x20(Ex:\x20Itaú,\x20Bradesco)", "min", "Cálculo\x20por\x20Multiplicador\x20Salarial\x20(Ex:\x20JP\x20Morgan,\x20BTG)", "multiplicador-slider", "Cálculo\x20por\x20Valor\x20Fixo\x20Anual\x20(Ex:\x20Nubank)", "valor-fixo-anual", "Por\x20favor,\x20informe\x20o\x20Valor\x20Fixo\x20Anual\x20do\x20PPR.", "p1-antecipacao", "p1-adicional", "max", "p1-salario-reajustado", "p1-bruto", "p1-contrib", "p1-ir", "p1-liquido", "p2-complemento", "p2-bruto", "p2-contrib", "p2-ir", "p2-liquido", "total-bruto", "total-descontos", "total-liquido", "resultado", "classList", "remove", "hidden", "add", "fade-in", "pt-BR", "style", "currency", "BRL", "data-default", "1.0", "slider-value", "toFixed", "x", "DOMContentLoaded", "8000"];
+    // --- Funções Auxiliares ---
 
-        function formatarMoeda(_0x32795f) {
-            return _0x32795f.toLocaleString(_0x5bf8[44], {
-                style: _0x5bf8[45],
-                currency: _0x5bf8[46]
-            })
+    // Formata um número para o padrão de moeda brasileiro (R$)
+    function formatarMoeda(valor) {
+        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    // Calcula o Imposto de Renda com base na tabela da PLR
+    function calcularIR(baseCalculo) {
+        if (baseCalculo <= 7640.80) return 0;
+        if (baseCalculo <= 9922.28) return (baseCalculo * 0.075) - 573.06;
+        if (baseCalculo <= 13167.00) return (baseCalculo * 0.15) - 1317.23;
+        if (baseCalculo <= 16380.38) return (baseCalculo * 0.225) - 2304.76;
+        return (baseCalculo * 0.275) - 3123.78;
+    }
+
+    // --- Lógica de Interação da UI ---
+
+    // Mostra/esconde os campos de entrada corretos com base no tipo de banco selecionado
+    function updateFormForBankType() {
+        const selectBanco = document.getElementById('banco');
+        const selectedOption = selectBanco.options[selectBanco.selectedIndex];
+        const type = selectedOption.getAttribute('data-type');
+        
+        const sliderContainer = document.getElementById('slider-container');
+        const fixedValueContainer = document.getElementById('fixed-value-container');
+
+        // Reseta (esconde) todos os containers específicos
+        sliderContainer.classList.add('hidden');
+        fixedValueContainer.classList.add('hidden');
+
+        // Mostra o container correto
+        if (type === 'multiplier') {
+            const defaultValue = selectedOption.getAttribute('data-default') || '1.0';
+            document.getElementById('multiplicador-slider').value = defaultValue;
+            updateSliderValue();
+            sliderContainer.classList.remove('hidden');
+        } else if (type === 'fixed') {
+            fixedValueContainer.classList.remove('hidden');
+        }
+    }
+
+    // Atualiza o valor exibido ao lado do slider
+    function updateSliderValue() {
+        const slider = document.getElementById('multiplicador-slider');
+        const display = document.getElementById('slider-value');
+        display.textContent = `${parseFloat(slider.value).toFixed(1)}x`;
+    }
+
+    // --- Lógica Principal de Cálculo ---
+    function calcularPLR() {
+        // Validação inicial do salário
+        const salarioBase = parseFloat(document.getElementById('salario').value) || 0;
+        if (salarioBase === 0) {
+            alert('Por favor, informe o seu salário.');
+            return;
         }
 
-        function calcularIR(_0x2286b5) {
-            if (_0x2286b5 <= 7640.8) return 0;
-            if (_0x2286b5 <= 9922.28) return _0x2286b5 * .075 - 573.06;
-            if (_0x2286b5 <= 13167) return _0x2286b5 * .15 - 1317.23;
-            if (_0x2286b5 <= 16380.38) return _0x2286b5 * .225 - 2304.76;
-            return _0x2286b5 * .275 - 3123.78
-        }
+        // 1. Coleta de todos os dados do formulário
+        const selectBanco = document.getElementById('banco');
+        const selectedOption = selectBanco.options[selectBanco.selectedIndex];
+        const tipoCalculo = selectedOption.getAttribute('data-type');
+        
+        const plrMarco2025 = parseFloat(document.getElementById('plr-marco-2025').value) || 0;
+        const aplicarReajuste = document.getElementById('reajuste').checked;
+        const calcularIRCheckbox = document.getElementById('calcular-ir').checked;
+        const aplicarContrib = document.getElementById('contrib-negocial').checked;
+        const mesesTrabalhados = parseInt(document.getElementById('meses').value) || 12;
+        const proporcaoMeses = mesesTrabalhados / 12;
+        
+        // 2. Definição de constantes e variáveis
+        const CCT = {
+            FATOR_SALARIO_REGRA_BASICA: 0.90, VALOR_FIXO_REGRA_BASICA: 3194.80, TETO_REGRA_BASICA: 17147.82,
+            PARCELA_ADICIONAL_FIXA: 6634.44, FATOR_SALARIO_ANTECIPACAO: 0.54, VALOR_FIXO_ANTECIPACAO: 1916.88,
+            TETO_ANTECIPACAO_REGRA: 10288.69,
+        };
+        CCT.TETO_ANTECIPACAO_ADICIONAL = CCT.PARCELA_ADICIONAL_FIXA / 2;
+        
+        const salarioCalculo = aplicarReajuste ? salarioBase * 1.0568 : salarioBase;
+        
+        let p1 = { bruto: 0, ir: 0, contrib: 0, liquido: 0 };
+        let p2 = { bruto: 0, ir: 0, contrib: 0, liquido: 0 };
+        let plrTotalAnual = 0;
 
-        function updateFormForBankType() {
-            const _0x518f9e = document.getElementById(_0x5bf8[3]),
-                _0x1a8f96 = _0x518f9e[_0x5bf8[4]][_0x518f9e[_0x5bf8[5]]],
-                _0x5b3d68 = _0x1a8f96[_0x5bf8[6]](_0x5bf8[7]),
-                _0x13380b = document.getElementById('slider-container'),
-                _0x4d634d = document.getElementById('fixed-value-container');
-            _0x13380b[_0x5bf8[40]][_0x5bf8[42]](_0x5bf8[41]);
-            _0x4d634d[_0x5bf8[40]][_0x5bf8[42]](_0x5bf8[41]);
-            if (_0x5b3d68 === 'multiplier') {
-                const _0x1d9b30 = _0x1a8f96[_0x5bf8[6]](_0x5bf8[47]) || _0x5bf8[48];
-                document.getElementById(_0x5bf8[19])[_0x5bf8[1]] = _0x1d9b30;
-                updateSliderValue();
-                _0x13380b[_0x5bf8[40]].remove(_0x5bf8[41])
-            } else _0x5b3d68 === 'fixed' && _0x4d634d[_0x5bf8[40]].remove(_0x5bf8[41])
-        }
+        // 3. LÓGICA DE CÁLCULO CENTRALIZADA
 
-        function updateSliderValue() {
-            const _0x117409 = document.getElementById(_0x5bf8[19]),
-                _0x1f062d = document.getElementById(_0x5bf8[49]);
-            _0x1f062d[_0x5bf8[15]] = `${parseFloat(_0x117409.value).toFixed(1)}x`
-        }
-
-        function calcularPLR() {
-            const _0x27b876 = parseFloat(document.getElementById(_0x5bf8[0])[_0x5bf8[1]]) || 0;
-            if (_0x27b876 === 0) return void alert(_0x5bf8[2]);
-            const _0x12921e = document.getElementById(_0x5bf8[3]),
-                _0x17904b = _0x12921e[_0x5bf8[4]][_0x12921e[_0x5bf8[5]]],
-                _0x303c73 = _0x17904b[_0x5bf8[6]](_0x5bf8[7]),
-                _0x3b890f = parseFloat(document.getElementById(_0x5bf8[8])[_0x5bf8[1]]) || 0,
-                _0x3c242c = document.getElementById(_0x5bf8[9])[_0x5bf8[10]],
-                _0x18441f = document.getElementById(_0x5bf8[11])[_0x5bf8[10]],
-                _0x539958 = document.getElementById(_0x5bf8[12])[_0x5bf8[10]],
-                _0x2a23eb = parseInt(document.getElementById(_0x5bf8[13])[_0x5bf8[1]]) || 12,
-                _0x59918c = _0x2a23eb / 12,
-                _0x510f22 = {
-                    FATOR_SALARIO_REGRA_BASICA: .9,
-                    VALOR_FIXO_REGRA_BASICA: 3194.8,
-                    TETO_REGRA_BASICA: 17147.82,
-                    PARCELA_ADICIONAL_FIXA: 6634.44,
-                    FATOR_SALARIO_ANTECIPACAO: .54,
-                    VALOR_FIXO_ANTECIPACAO: 1916.88,
-                    TETO_ANTECIPACAO_REGRA: 10288.69
-                };
-            _0x510f22.TETO_ANTECIPACAO_ADICIONAL = _0x510f22.PARCELA_ADICIONAL_FIXA / 2;
-            const _0x51b34e = _0x3c242c ? _0x27b876 * 1.0568 : _0x27b876;
-            let _0x2de1a8 = {
-                    bruto: 0,
-                    ir: 0,
-                    contrib: 0,
-                    liquido: 0
-                },
-                _0x24270d = {
-                    bruto: 0,
-                    ir: 0,
-                    contrib: 0,
-                    liquido: 0
-                },
-                _0x539bf5 = 0;
-            if (_0x303c73 === 'cct') {
-                document.getElementById(_0x5bf8[14])[_0x5bf8[15]] = _0x5bf8[16];
-                const _0x2f8b54 = Math.min(_0x51b34e * _0x510f22.FATOR_SALARIO_REGRA_BASICA + _0x510f22.VALOR_FIXO_REGRA_BASICA, _0x510f22.TETO_REGRA_BASICA);
-                _0x539bf5 = (_0x2f8b54 + _0x510f22.PARCELA_ADICIONAL_FIXA) * _0x59918c
-            } else if (_0x303c73 === 'multiplier') {
-                document.getElementById(_0x5bf8[14])[_0x5bf8[15]] = _0x5bf8[18];
-                const _0x310f85 = parseFloat(document.getElementById(_0x5bf8[19])[_0x5bf8[1]]);
-                _0x539bf5 = _0x51b34e * _0x310f85 * _0x59918c
-            } else if (_0x303c73 === 'fixed') {
-                document.getElementById(_0x5bf8[14])[_0x5bf8[15]] = _0x5bf8[20];
-                const _0x323a6f = parseFloat(document.getElementById(_0x5bf8[21])[_0x5bf8[1]]) || 0;
-                if (_0x323a6f === 0) return void alert(_0x5bf8[22]);
-                _0x539bf5 = _0x323a6f * _0x59918c
+        // Passo A: Calcular o PLR/PPR TOTAL ANUAL esperado, com base no método escolhido.
+        if (tipoCalculo === 'cct') {
+            document.getElementById('calculation-method').textContent = 'Cálculo Padrão CCT (Ex: Itaú, Bradesco)';
+            const regraBasicaTotal = Math.min(salarioCalculo * CCT.FATOR_SALARIO_REGRA_BASICA + CCT.VALOR_FIXO_REGRA_BASICA, CCT.TETO_REGRA_BASICA);
+            plrTotalAnual = (regraBasicaTotal + CCT.PARCELA_ADICIONAL_FIXA) * proporcaoMeses;
+        } else if (tipoCalculo === 'multiplier') {
+            document.getElementById('calculation-method').textContent = 'Cálculo por Multiplicador Salarial (Ex: JP Morgan, BTG)';
+            const multiplicador = parseFloat(document.getElementById('multiplicador-slider').value);
+            plrTotalAnual = (salarioCalculo * multiplicador) * proporcaoMeses;
+        } else if (tipoCalculo === 'fixed') {
+            document.getElementById('calculation-method').textContent = 'Cálculo por Valor Fixo Anual (Ex: Nubank)';
+            const valorFixo = parseFloat(document.getElementById('valor-fixo-anual').value) || 0;
+            if (valorFixo === 0) {
+                alert('Por favor, informe o Valor Fixo Anual do PPR.');
+                return;
             }
-            const _0x2be4cd = Math.min(_0x51b34e * _0x510f22.FATOR_SALARIO_ANTECIPACAO + _0x510f22.VALOR_FIXO_ANTECIPACAO, _0x510f22.TETO_ANTECIPACAO_REGRA),
-                _0x5a1811 = _0x510f22.TETO_ANTECIPACAO_ADICIONAL;
-            _0x2de1a8.bruto = (_0x2be4cd + _0x5a1811) * _0x59918c;
-            _0x24270d.bruto = Math.max(0, _0x539bf5 - _0x2de1a8.bruto);
-            if (_0x539958) {
-                _0x2de1a8.contrib = _0x2de1a8.bruto * .015;
-                _0x24270d.contrib = _0x24270d.bruto * .015
-            }
-            if (_0x18441f) {
-                const _0x4d05e2 = _0x2de1a8.bruto + _0x3b890f,
-                    _0x51b852 = calcularIR(_0x4d05e2),
-                    _0x2beab4 = calcularIR(_0x3b890f);
-                _0x2de1a8.ir = Math.max(0, _0x51b852 - _0x2beab4);
-                _0x24270d.ir = calcularIR(_0x24270d.bruto)
-            }
-            _0x2de1a8.liquido = _0x2de1a8.bruto - _0x2de1a8.ir - _0x2de1a8.contrib;
-            _0x24270d.liquido = _0x24270d.bruto - _0x24270d.ir - _0x24270d.contrib;
-            document.getElementById(_0x5bf8[26])[_0x5bf8[15]] = formatarMoeda(_0x51b34e);
-            document.getElementById(_0x5bf8[23])[_0x5bf8[15]] = formatarMoeda(_0x2be4cd * _0x59918c);
-            document.getElementById(_0x5bf8[24])[_0x5bf8[15]] = formatarMoeda(_0x5a1811 * _0x59918c);
-            document.getElementById(_0x5bf8[27])[_0x5bf8[15]] = formatarMoeda(_0x2de1a8.bruto);
-            document.getElementById(_0x5bf8[28])[_0x5bf8[15]] = formatarMoeda(_0x2de1a8.contrib);
-            document.getElementById(_0x5bf8[29])[_0x5bf8[15]] = formatarMoeda(_0x2de1a8.ir);
-            document.getElementById(_0x5bf8[30])[_0x5bf8[15]] = formatarMoeda(_0x2de1a8.liquido);
-            document.getElementById(_0x5bf8[31])[_0x5bf8[15]] = formatarMoeda(_0x24270d.bruto);
-            document.getElementById(_0x5bf8[32])[_0x5bf8[15]] = formatarMoeda(_0x24270d.bruto);
-            document.getElementById(_0x5bf8[33])[_0x5bf8[15]] = formatarMoeda(_0x24270d.contrib);
-            document.getElementById(_0x5bf8[34])[_0x5bf8[15]] = formatarMoeda(_0x24270d.ir);
-            document.getElementById(_0x5bf8[35])[_0x5bf8[15]] = formatarMoeda(_0x24270d.liquido);
-            const _0x4d05e2 = _0x2de1a8.bruto + _0x24270d.bruto,
-                _0x51b852 = _0x2de1a8.contrib + _0x2de1a8.ir + _0x24270d.contrib + _0x24270d.ir;
-            document.getElementById(_0x5bf8[36])[_0x5bf8[15]] = formatarMoeda(_0x4d05e2);
-            document.getElementById(_0x5bf8[37])[_0x5bf8[15]] = formatarMoeda(_0x51b852);
-            document.getElementById(_0x5bf8[38])[_0x5bf8[15]] = formatarMoeda(_0x2de1a8.liquido + _0x24270d.liquido);
-            document.getElementById(_0x5bf8[39])[_0x5bf8[40]].remove(_0x5bf8[42]);
-            document.getElementById(_0x5bf8[39])[_0x5bf8[40]][_0x5bf8[43]](_0x5bf8[44])
+            plrTotalAnual = valorFixo * proporcaoMeses;
         }
-        document.addEventListener(_0x5bf8[52], function() {
-            updateFormForBankType();
-            document.getElementById(_0x5bf8[0])[_0x5bf8[1]] = _0x5bf8[53]
-        });
+
+        // Passo B: Calcular a PRIMEIRA PARCELA (antecipação) usando a regra padrão da CCT para TODOS os casos.
+        const p1_antecipacao = Math.min(salarioCalculo * CCT.FATOR_SALARIO_ANTECIPACAO + CCT.VALOR_FIXO_ANTECIPACAO, CCT.TETO_ANTECIPACAO_REGRA);
+        const p1_adicional = CCT.TETO_ANTECIPACAO_ADICIONAL;
+        p1.bruto = (p1_antecipacao + p1_adicional) * proporcaoMeses;
+
+        // Passo C: Calcular a SEGUNDA PARCELA como a diferença do total menos a antecipação.
+        p2.bruto = Math.max(0, plrTotalAnual - p1.bruto);
+        
+        // Passo D: Cálculo de descontos (Contribuição e IR)
+        if (aplicarContrib) {
+            p1.contrib = p1.bruto * 0.015;
+            p2.contrib = p2.bruto * 0.015;
+        }
+        if (calcularIRCheckbox) {
+            const baseP1Anualizada = p1.bruto + plrMarco2025;
+            const irTotalP1 = calcularIR(baseP1Anualizada);
+            const irJaPago = calcularIR(plrMarco2025);
+            p1.ir = Math.max(0, irTotalP1 - irJaPago);
+            p2.ir = calcularIR(p2.bruto);
+        }
+
+        p1.liquido = p1.bruto - p1.ir - p1.contrib;
+        p2.liquido = p2.bruto - p2.ir - p2.contrib;
+
+        // Passo E: Atualização da UI com os resultados
+        document.getElementById('p1-salario-reajustado').textContent = formatarMoeda(salarioCalculo);
+        document.getElementById('p1-antecipacao').textContent = formatarMoeda(p1_antecipacao * proporcaoMeses);
+        document.getElementById('p1-adicional').textContent = formatarMoeda(p1_adicional * proporcaoMeses);
+        document.getElementById('p1-bruto').textContent = formatarMoeda(p1.bruto);
+        document.getElementById('p1-contrib').textContent = formatarMoeda(p1.contrib);
+        document.getElementById('p1-ir').textContent = formatarMoeda(p1.ir);
+        document.getElementById('p1-liquido').textContent = formatarMoeda(p1.liquido);
+
+        document.getElementById('p2-complemento').textContent = formatarMoeda(p2.bruto);
+        document.getElementById('p2-bruto').textContent = formatarMoeda(p2.bruto);
+        document.getElementById('p2-contrib').textContent = formatarMoeda(p2.contrib);
+        document.getElementById('p2-ir').textContent = formatarMoeda(p2.ir);
+        document.getElementById('p2-liquido').textContent = formatarMoeda(p2.liquido);
+
+        const totalBruto = p1.bruto + p2.bruto;
+        const totalDescontos = p1.contrib + p1.ir + p2.contrib + p2.ir;
+        document.getElementById('total-bruto').textContent = formatarMoeda(totalBruto);
+        document.getElementById('total-descontos').textContent = formatarMoeda(totalDescontos);
+        document.getElementById('total-liquido').textContent = formatarMoeda(p1.liquido + p2.liquido);
+
+        document.getElementById('resultado').classList.remove('hidden');
+        document.getElementById('resultado').classList.add('fade-in');
+    }
+    
+    // Roda na inicialização para configurar o formulário
+    document.addEventListener('DOMContentLoaded', function() {
+        updateFormForBankType();
+        document.getElementById('salario').value = '8000'; 
+    });
     </script>
 </body>
 </html>
