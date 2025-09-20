@@ -59,7 +59,6 @@
                 </div>
             </div>
             
-            <!-- Campo para Bancos com Multiplicador -->
             <div id="slider-container" class="hidden space-y-2 pt-2">
                 <div class="flex justify-between items-center">
                     <label for="multiplicador-slider" class="text-sm font-medium text-gray-700">Multiplicador Salarial</label>
@@ -68,7 +67,6 @@
                 <input id="multiplicador-slider" type="range" min="0.1" max="5.0" value="2.2" step="0.1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateSliderValue()">
             </div>
             
-            <!-- Campo para Bancos com Valor Fixo -->
             <div id="fixed-value-container" class="hidden pt-2">
                 <label for="valor-fixo-anual" class="block text-sm font-medium text-gray-700 mb-1">Valor Fixo do PPR (Bruto Anual)</label>
                 <input type="number" id="valor-fixo-anual" placeholder="Ex: 15000.00" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
@@ -119,7 +117,11 @@
                  <div class="bg-gray-50 p-4 rounded-lg border">
                     <p class="font-semibold text-green-800 mb-3">Segunda Parcela <span class="text-sm font-normal">(MAR/2026)</span></p>
                     <div class="text-sm space-y-1">
-                       <div class="result-line"><span class="result-label">Complemento Final:</span><span id="p2-complemento" class="result-value"></span></div>
+                        <div id="p2-detalhe-fixo" class="result-line"><span class="result-label">Complemento Final:</span><span id="p2-complemento-final" class="result-value"></span></div>
+                        <div id="p2-detalhe-cct" class="hidden">
+                            <div class="result-line"><span class="result-label">Complemento (Regra Básica):</span><span id="p2-complemento-regra" class="result-value"></span></div>
+                            <div class="result-line"><span class="result-label">Complemento Adicional:</span><span id="p2-adicional" class="result-value"></span></div>
+                        </div>
                         <hr class="my-2">
                         <div class="result-line"><span class="result-label font-bold">Subtotal Bruto:</span><span id="p2-bruto" class="result-value font-bold"></span></div>
                         <div class="result-line"><span class="result-label">Contribuição Negocial (-):</span><span id="p2-contrib" class="result-value deduction"></span></div>
@@ -138,6 +140,10 @@
         </div>
         
         <div class="text-center mt-6">
+            <!-- CONTADOR DE VISITAS INSERIDO AQUI -->
+            <div class="flex justify-center mb-2">
+                <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fdiejei.github.io%2Fplr-qual-a-fatinha-do-bolo%2F&count_bg=%231D4ED8&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=visitantes&edge_flat=true" alt="Contador de Visitas"/>
+            </div>
             <p class="text-xs text-gray-400">
                 Última atualização: Set/2025.
                 *Reajuste de 5,68% (INPC 5,05% + 0,6% aumento real). Os cálculos são projeções e podem divergir do valor real.
@@ -147,13 +153,10 @@
 
     <script>
     // --- Funções Auxiliares ---
-
-    // Formata um número para o padrão de moeda brasileiro (R$)
     function formatarMoeda(valor) {
         return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
-    // Calcula o Imposto de Renda com base na tabela da PLR
     function calcularIR(baseCalculo) {
         if (baseCalculo <= 7640.80) return 0;
         if (baseCalculo <= 9922.28) return (baseCalculo * 0.075) - 573.06;
@@ -163,8 +166,6 @@
     }
 
     // --- Lógica de Interação da UI ---
-
-    // Mostra/esconde os campos de entrada corretos com base no tipo de banco selecionado
     function updateFormForBankType() {
         const selectBanco = document.getElementById('banco');
         const selectedOption = selectBanco.options[selectBanco.selectedIndex];
@@ -173,11 +174,9 @@
         const sliderContainer = document.getElementById('slider-container');
         const fixedValueContainer = document.getElementById('fixed-value-container');
 
-        // Reseta (esconde) todos os containers específicos
         sliderContainer.classList.add('hidden');
         fixedValueContainer.classList.add('hidden');
 
-        // Mostra o container correto
         if (type === 'multiplier') {
             const defaultValue = selectedOption.getAttribute('data-default') || '1.0';
             document.getElementById('multiplicador-slider').value = defaultValue;
@@ -188,7 +187,6 @@
         }
     }
 
-    // Atualiza o valor exibido ao lado do slider
     function updateSliderValue() {
         const slider = document.getElementById('multiplicador-slider');
         const display = document.getElementById('slider-value');
@@ -197,14 +195,12 @@
 
     // --- Lógica Principal de Cálculo ---
     function calcularPLR() {
-        // Validação inicial do salário
         const salarioBase = parseFloat(document.getElementById('salario').value) || 0;
         if (salarioBase === 0) {
             alert('Por favor, informe o seu salário.');
             return;
         }
 
-        // 1. Coleta de todos os dados do formulário
         const selectBanco = document.getElementById('banco');
         const selectedOption = selectBanco.options[selectBanco.selectedIndex];
         const tipoCalculo = selectedOption.getAttribute('data-type');
@@ -216,7 +212,6 @@
         const mesesTrabalhados = parseInt(document.getElementById('meses').value) || 12;
         const proporcaoMeses = mesesTrabalhados / 12;
         
-        // 2. Definição de constantes e variáveis
         const CCT = {
             FATOR_SALARIO_REGRA_BASICA: 0.90, VALOR_FIXO_REGRA_BASICA: 3194.80, TETO_REGRA_BASICA: 17147.82,
             PARCELA_ADICIONAL_FIXA: 6634.44, FATOR_SALARIO_ANTECIPACAO: 0.54, VALOR_FIXO_ANTECIPACAO: 1916.88,
@@ -230,17 +225,15 @@
         let p2 = { bruto: 0, ir: 0, contrib: 0, liquido: 0 };
         let plrTotalAnual = 0;
 
-        // 3. LÓGICA DE CÁLCULO CENTRALIZADA
-
-        // Passo A: Calcular o PLR/PPR TOTAL ANUAL esperado, com base no método escolhido.
+        // Passo A: Calcular o PLR/PPR TOTAL ANUAL esperado
         if (tipoCalculo === 'cct') {
             document.getElementById('calculation-method').textContent = 'Cálculo Padrão CCT (Ex: Itaú, Bradesco)';
             const regraBasicaTotal = Math.min(salarioCalculo * CCT.FATOR_SALARIO_REGRA_BASICA + CCT.VALOR_FIXO_REGRA_BASICA, CCT.TETO_REGRA_BASICA);
-            plrTotalAnual = (regraBasicaTotal + CCT.PARCELA_ADICIONAL_FIXA) * proporcaoMeses;
+            plrTotalAnual = (regraBasicaTotal + CCT.PARCELA_ADICIONAL_FIXA);
         } else if (tipoCalculo === 'multiplier') {
             document.getElementById('calculation-method').textContent = 'Cálculo por Multiplicador Salarial (Ex: JP Morgan, BTG)';
             const multiplicador = parseFloat(document.getElementById('multiplicador-slider').value);
-            plrTotalAnual = (salarioCalculo * multiplicador) * proporcaoMeses;
+            plrTotalAnual = (salarioCalculo * multiplicador);
         } else if (tipoCalculo === 'fixed') {
             document.getElementById('calculation-method').textContent = 'Cálculo por Valor Fixo Anual (Ex: Nubank)';
             const valorFixo = parseFloat(document.getElementById('valor-fixo-anual').value) || 0;
@@ -248,18 +241,29 @@
                 alert('Por favor, informe o Valor Fixo Anual do PPR.');
                 return;
             }
-            plrTotalAnual = valorFixo * proporcaoMeses;
+            plrTotalAnual = valorFixo;
         }
+        plrTotalAnual *= proporcaoMeses;
 
-        // Passo B: Calcular a PRIMEIRA PARCELA (antecipação) usando a regra padrão da CCT para TODOS os casos.
-        const p1_antecipacao = Math.min(salarioCalculo * CCT.FATOR_SALARIO_ANTECIPACAO + CCT.VALOR_FIXO_ANTECIPACAO, CCT.TETO_ANTECIPACAO_REGRA);
-        const p1_adicional = CCT.TETO_ANTECIPACAO_ADICIONAL;
-        p1.bruto = (p1_antecipacao + p1_adicional) * proporcaoMeses;
+        // Passo B: Calcular a PRIMEIRA PARCELA (antecipação) usando a regra padrão da CCT
+        const p1_antecipacao_base = Math.min(salarioCalculo * CCT.FATOR_SALARIO_ANTECIPACAO + CCT.VALOR_FIXO_ANTECIPACAO, CCT.TETO_ANTECIPACAO_REGRA);
+        const p1_adicional_base = CCT.TETO_ANTECIPACAO_ADICIONAL;
+        p1.bruto = (p1_antecipacao_base + p1_adicional_base) * proporcaoMeses;
 
-        // Passo C: Calcular a SEGUNDA PARCELA como a diferença do total menos a antecipação.
+        // Passo C: Calcular a SEGUNDA PARCELA como a diferença
         p2.bruto = Math.max(0, plrTotalAnual - p1.bruto);
         
-        // Passo D: Cálculo de descontos (Contribuição e IR)
+        // Passo D: Detalhar os componentes da P2 para exibição
+        let p2_adicional = 0;
+        let p2_complemento_regra = 0;
+
+        if (tipoCalculo !== 'fixed') {
+            const p2_adicional_base = CCT.PARCELA_ADICIONAL_FIXA - p1_adicional_base;
+            p2_adicional = p2_adicional_base * proporcaoMeses;
+            p2_complemento_regra = p2.bruto - p2_adicional;
+        }
+        
+        // Passo E: Cálculo de descontos
         if (aplicarContrib) {
             p1.contrib = p1.bruto * 0.015;
             p2.contrib = p2.bruto * 0.015;
@@ -275,16 +279,28 @@
         p1.liquido = p1.bruto - p1.ir - p1.contrib;
         p2.liquido = p2.bruto - p2.ir - p2.contrib;
 
-        // Passo E: Atualização da UI com os resultados
+        // Passo F: Atualização da UI
         document.getElementById('p1-salario-reajustado').textContent = formatarMoeda(salarioCalculo);
-        document.getElementById('p1-antecipacao').textContent = formatarMoeda(p1_antecipacao * proporcaoMeses);
-        document.getElementById('p1-adicional').textContent = formatarMoeda(p1_adicional * proporcaoMeses);
+        document.getElementById('p1-antecipacao').textContent = formatarMoeda(p1_antecipacao_base * proporcaoMeses);
+        document.getElementById('p1-adicional').textContent = formatarMoeda(p1_adicional_base * proporcaoMeses);
         document.getElementById('p1-bruto').textContent = formatarMoeda(p1.bruto);
         document.getElementById('p1-contrib').textContent = formatarMoeda(p1.contrib);
         document.getElementById('p1-ir').textContent = formatarMoeda(p1.ir);
         document.getElementById('p1-liquido').textContent = formatarMoeda(p1.liquido);
 
-        document.getElementById('p2-complemento').textContent = formatarMoeda(p2.bruto);
+        // UI da Parcela 2
+        document.getElementById('p2-complemento-final').textContent = formatarMoeda(p2.bruto);
+        document.getElementById('p2-complemento-regra').textContent = formatarMoeda(p2_complemento_regra);
+        document.getElementById('p2-adicional').textContent = formatarMoeda(p2_adicional);
+
+        if (tipoCalculo === 'fixed') {
+            document.getElementById('p2-detalhe-fixo').style.display = 'flex';
+            document.getElementById('p2-detalhe-cct').style.display = 'none';
+        } else {
+            document.getElementById('p2-detalhe-fixo').style.display = 'none';
+            document.getElementById('p2-detalhe-cct').style.display = 'block';
+        }
+
         document.getElementById('p2-bruto').textContent = formatarMoeda(p2.bruto);
         document.getElementById('p2-contrib').textContent = formatarMoeda(p2.contrib);
         document.getElementById('p2-ir').textContent = formatarMoeda(p2.ir);
@@ -300,7 +316,6 @@
         document.getElementById('resultado').classList.add('fade-in');
     }
     
-    // Roda na inicialização para configurar o formulário
     document.addEventListener('DOMContentLoaded', function() {
         updateFormForBankType();
         document.getElementById('salario').value = '8000'; 
